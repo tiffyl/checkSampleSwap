@@ -170,7 +170,7 @@ workflow {
             .set{ binnedvcf_ch }
 
         mpileup_strandseq(binnedvcf_ch, strandseqdir_ch)
-    } q
+    } 
     else {
         Channel.fromPath("${params.binvcfdir}/*.vcf.gz*")
             .map{ file -> [ file.baseName.split("\\.")[0], file ] }
