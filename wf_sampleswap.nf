@@ -37,28 +37,11 @@ if ( ! params.strandseqdir ) {
 }
 
 // PROCESS
-process genome_windows {
-    input:
-        val(windowsize)
-
-    output:
-        stdout
-
-    script:
-    """
-    cat /projects/lansdorp/references/hg38/hg38.chrom.sizes | head -24 | grep -w ${params.chr} | while read -r -a line; 
-    do
-        bash ${projectDir}/scripts/bin_genomes.sh ${windowsize} ${params.chr} 1 \${line[1]}
-    done
-    """
-}
-
 process bin_vcf {
     // bin VCF into bin size
     container "${projectDir}/singularity/bcftools.sif"
 
     input:
-        // val(region)
         val(windowsize)
         path(nanovcf)
 
@@ -111,7 +94,6 @@ process out_binvcf {
 
 process mpileup_strandseq {
     container "${projectDir}/singularity/bcftools.sif"
-    // publishDir "${launchDir}/mpileups/"
 
     memory "2GB"
 
@@ -132,7 +114,6 @@ process mpileup_strandseq {
 
 process concat_mpileup {
     container "${projectDir}/singularity/bcftools.sif"
-    // publishDir "${launchDir}", mode: 'copy'
 
     input:
         val(mpileupList)
@@ -176,13 +157,6 @@ workflow {
         .set{ strandseqdir_ch }
 
     if ( ! params.binvcfdir ) {
-        // genome_windows(params.window)
-        //     .splitText{ it.split('\n') }
-        //     .flatten()
-        //     .set{ region_ch }
-
-        // bin_vcf(region_ch, nanovcf_ch)
-
         bin_vcf(params.window, nanovcf_ch)
         
         if ( params.keepbinvcf ) {
@@ -196,7 +170,7 @@ workflow {
             .set{ binnedvcf_ch }
 
         mpileup_strandseq(binnedvcf_ch, strandseqdir_ch)
-    } 
+    } q
     else {
         Channel.fromPath("${params.binvcfdir}/*.vcf.gz*")
             .map{ file -> [ file.baseName.split("\\.")[0], file ] }
