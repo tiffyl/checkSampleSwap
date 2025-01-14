@@ -13,6 +13,7 @@ if ( params.help ) {
              |  --chr <string>      Chromosome of interest. [default: ${params.chr}]
              |  --window <int>      Size of window to break chromosome. [default: ${params.window}]
              |  --keepbinvcf        Keep binned vcf files. [default: ${params.keepbinvcf}]
+             |  --keepmpileup       Keep mpileup from Strand-Seq data. [default: ${params.keepmpileup}]
              |  --normalize <int>   Number of SNPs to compare. [default: all available]
              |  --binvcfdir <path>  Path to existing binned vcf files (will skip binning in pipeline and use existing files instead).
              |
@@ -80,18 +81,6 @@ process bin_vcf {
     """
 }
 
-process out_binvcf {
-    input:
-        path(binnedvcfs)
-
-    script:
-    """
-    mkdir -p ${launchDir}/bin_vcf/
-    rsync -arL --include="*vcf.gz*" ./ ${launchDir}/bin_vcf/
-    """
-
-}
-
 process mpileup_strandseq {
     container "${projectDir}/singularity/bcftools.sif"
 
@@ -145,6 +134,29 @@ process discordance {
     """
 }
 
+process out_binvcf {
+    input:
+        path(binnedvcfs)
+
+    script:
+    """
+    mkdir -p ${launchDir}/bin_vcf/
+    rsync -arL --include="*vcf.gz*" ./ ${launchDir}/bin_vcf/
+    """
+
+}
+
+process out_mpileup {
+    input:
+        path(mpileups)
+
+    script:
+    """
+    mkdir -p ${launchDir}/mpileup/
+    rsync -arL --include="*mpileup.vcf.gz*" ./ ${launchDir}/mpileup/
+    """
+
+}
 
 // WORKFLOW
 workflow {
@@ -179,7 +191,11 @@ workflow {
 
         mpileup_strandseq(binnedvcf_ch, strandseqdir_ch)
     }
-    
+
+    if ( params.keepmpileup ) {
+        out_mpileup(mpileup_strandseq.out.mpileups.concat(mpileup_strandseq.out.mpileupsindex).collect())
+    }
+
     concat_mpileup(mpileup_strandseq.out.mpileups.collect(), mpileup_strandseq.out.mpileupsindex.collect())
     discordance(concat_mpileup.out.allmpileup, nanovcf_ch)
 }
