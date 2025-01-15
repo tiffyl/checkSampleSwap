@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: python:3.10.15
+
+
+%help
+Singularity container with python for visualizations with altair.
+
+%post
+    pip install pandas numpy matplotlib seaborn altair openpyxl
