@@ -48,7 +48,6 @@ process bin_vcf {
 
     output:
         path("chr*.vcf.gz*"), optional:true, emit: subvcfs
-        stdout
 
     script:
     """
@@ -162,6 +161,7 @@ process out_mpileup {
 workflow {
     Channel.fromPath("${params.nanovcf}*")
         .collect()
+        .sort()
         .set{ nanovcf_ch }
 
     Channel.fromPath("${params.strandseqdir}")
